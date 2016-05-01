@@ -27,7 +27,11 @@ module.exports = {
         for(let i = 1; i < arguments.length; i++) {
             let arg = arguments[i];
             if(arg !== null && typeof arg === 'object') {
-                Object.keys(arg).forEach((key) => elem.setAttribute(key, arg[key]));
+                if(arg instanceof Element) {
+                    this.mount(elem, arg);
+                } else {
+                    Object.keys(arg).forEach((key) => elem.setAttribute(key, arg[key]));
+                }
             } else {
                 elem.textContent = arg;
             }
@@ -53,30 +57,18 @@ module.exports = {
         core.appendChild(el);
     },
     /**
-     * map data to element of type el and mount results into container
-     *
-     * i.e. bind('li', [1, 2, 3, 4]) => <li>1</li><li>2</li><li>3</li><li>4</li>
-     *
-     * @param {Element} container
-     * @param {string} el
-     * @param {...string|object} data
+     * ISView.html.bind(mount, 'li', [...], (val, index) => { ... }, (val, index) => { ... })
      */
-    bind: function(container, el, data) {
-        let self = this;
-        let mountPoint = self.el(container);
+    bind: function(parameters) {
+        var mountPoint = parameters.mountPoint;
+        var elemType = parameters.elemType;
+        var data = parameters.data;
+        var renderCallback =  parameters.renderCallback !== undefined && parameters.renderCallback !== null ? parameters.renderCallback : (val) => { return val; };
+        var attrsCallback = parameters.attrsCallback !== undefined && parameters.attrsCallback !== null ? parameters.attrsCallback : () => { return {}; };
+        var self = this;
 
-        data.forEach((val) => {
-            let param = null;
-            let elem = null;
-
-            if(Array.isArray(val)) {
-                param = [el, ...val];
-                elem = self.el.call(null, ...param);
-            } else {
-                param = [el, val];
-                elem = self.el.call(null, ...param);
-            }
-
+        data.forEach((val, index) => {
+            let elem = self.el(elemType, attrsCallback(val, index), renderCallback(val, index));
             self.mount(mountPoint, elem);
         });
 
